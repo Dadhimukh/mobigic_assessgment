@@ -8,7 +8,6 @@ import {
     Input,
     message,
     Space,
-    Typography,
 } from 'antd';
 import {
     PlusOutlined,
@@ -70,7 +69,7 @@ const FileUploader = () => {
             if (!response.ok) throw new Error('Failed to delete files');
             const data = await response.json();
             message.success('files deleted successfully');
-            setFiles(files.filter((files) => files._id !== filesId));
+            setFiles(files?.filter((files) => files?._id !== filesId));
         } catch (error) {
             message.error(`Delete failed: ${error.message}`);
             console.error('Delete error:', error);
@@ -102,7 +101,7 @@ const FileUploader = () => {
             const data = await response.json();
             message.success('files updated successfully');
             setFiles(
-                files.map((files) => (files._id === data._id ? data : files))
+                files?.map((files) => (files?._id === data?._id ? data : files))
             );
             setIsModalVisible(false);
             setEditingFiles(null);
@@ -119,9 +118,9 @@ const FileUploader = () => {
         const generatedCode = generateSixDigitUniqueCode();
         formData.append('code', generatedCode);
 
-        if (values.files && values.files.fileList.length > 0) {
-            values.files.fileList.forEach((file) => {
-                formData.append('files', file.originFileObj);
+        if (values?.files && values?.files?.fileList?.length > 0) {
+            values?.files?.fileList?.forEach((file) => {
+                formData.append('files', file?.originFileObj);
             });
         } else {
             message.error('Please select at least one file');
@@ -193,7 +192,9 @@ const FileUploader = () => {
                             <Input
                                 placeholder="Enter 6-digit code"
                                 value={
-                                    codeInputs[`${record._id}-${file}`] || ''
+                                    codeInputs[
+                                        `http://localhost:8000/albums/download-image/`
+                                    ] || ''
                                 }
                                 onChange={(e) =>
                                     handleCodeInputChange(
@@ -256,9 +257,9 @@ const FileUploader = () => {
                 return Upload.LIST_IGNORE;
             }
 
-            const isLt5M = file.size / 1024 / 1024 < 5;
+            const isLt5M = file?.size / 1024 / 1024 < 5;
             if (!isLt5M) {
-                message.error(`${file.name} exceeds the 5MB size limit.`);
+                message.error(`${file?.name} exceeds the 5MB size limit.`);
             }
 
             return isSupported && isLt5M ? true : Upload.LIST_IGNORE;
