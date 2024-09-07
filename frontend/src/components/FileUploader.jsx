@@ -8,6 +8,8 @@ import {
     Input,
     message,
     Space,
+    Popconfirm,
+    Tooltip,
 } from 'antd';
 import {
     PlusOutlined,
@@ -47,49 +49,45 @@ const FileUploader = () => {
             console.error('Fetch files error:', error);
         }
     };
-        const handleDownload = async (file) => {
-            const code = codeInputs[file._id];
-            try {
-                const response = await fetch(
-                    `${BASE_URL}/files/download-image/${code}`,
-                    {
-                        method: 'GET',
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+    const handleDownload = async (file) => {
+        const code = codeInputs[file._id];
+        try {
+            const response = await fetch(
+                `${BASE_URL}/files/download-image/${code}`,
+                {
+                    method: 'GET',
                 }
-                const contentDisposition = response.headers.get(
-                    'Content-Disposition'
-                );
-                const contentType = response.headers.get('Content-Type');
+            );
 
-                const extension = contentType
-                    ? contentType.split('/')[1]
-                    : 'jpg';
-                const filename = contentDisposition
-                    ? contentDisposition
-                          .split('filename=')[1]
-                          .replace(/"/g, '') +
-                      '.' +
-                      extension
-                    : 'downloaded-file.' + extension;
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', filename);
-                document.body.appendChild(link);
-                link.click();
-                setCodeInputs((prev) => ({ ...prev, [file._id]: '' })); // Clear input after download
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Error downloading the file:', error);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
-        };
-const handleDelete = async (filesId) => {
+            const contentDisposition = response.headers.get(
+                'Content-Disposition'
+            );
+            const contentType = response.headers.get('Content-Type');
+
+            const extension = contentType ? contentType.split('/')[1] : 'jpg';
+            const filename = contentDisposition
+                ? contentDisposition.split('filename=')[1].replace(/"/g, '') +
+                  '.' +
+                  extension
+                : 'downloaded-file.' + extension;
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            setCodeInputs((prev) => ({ ...prev, [file._id]: '' })); // Clear input after download
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading the file:', error);
+        }
+    };
+    const handleDelete = async (filesId) => {
         try {
             const response = await fetch(
                 `${BASE_URL}/files/${userId}/${filesId}`,
@@ -243,21 +241,32 @@ const handleDelete = async (filesId) => {
             key: 'actions',
             render: (record) => (
                 <Space>
-                    <Button
-                        type="primary"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
+                    <Tooltip title="Edit File">
+                        <Button
+                            type="primary"
+                            icon={<EditOutlined />}
+                            onClick={() => handleEdit(record)}
+                        >
+                            Edit
+                        </Button>
+                    </Tooltip>
+
+                    <Popconfirm
+                        title="Are you sure to delete this file?"
+                        onConfirm={() => handleDelete(record._id)}
+                        okText="Yes"
+                        cancelText="No"
                     >
-                        Edit
-                    </Button>
-                    <Button
-                        type="primary"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(record._id)}
-                    >
-                        Delete
-                    </Button>
+                        <Tooltip title="Delete File">
+                            <Button
+                                type="primary"
+                                danger
+                                icon={<DeleteOutlined />}
+                            >
+                                Delete
+                            </Button>
+                        </Tooltip>
+                    </Popconfirm>
                 </Space>
             ),
         },
