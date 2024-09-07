@@ -362,7 +362,7 @@ const FileUploader = () => {
             />
             <Modal
                 title={editingFiles ? 'Edit files' : 'Add files'}
-                visible={isModalVisible}
+                open={isModalVisible}
                 onOk={handleModalOk}
                 onCancel={handleModalCancel}
                 okText={editingFiles ? 'Update' : 'Create'}

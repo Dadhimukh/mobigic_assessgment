@@ -12,7 +12,7 @@ const Login = () => {
     const [form] = Form.useForm();
 
     const handleSubmit = async (values) => {
-        console.log('login clicked', values);
+        // console.log('login clicked', values);
 
         try {
             const res = await fetch(`${URL}/login`, {
