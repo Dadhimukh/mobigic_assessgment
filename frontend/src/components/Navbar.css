@@ -1,0 +1,41 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f5;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.navbar .logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000000;
+}
+
+.navbar .nav-links {
+  display: flex;
+  gap: 20px;
+}
+
+.navbar .nav-links a {
+  text-decoration: none;
+  color: #000000;
+  font-size: 16px;
+}
+
+.navbar .join-btn {
+  padding: 5px 15px;
+  border: 1px solid #000000;
+  border-radius: 20px;
+  background-color: #ffffff;
+  color: #000000;
+  text-decoration: none;
+  font-size: 16px;
+}

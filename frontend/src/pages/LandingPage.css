@@ -1,0 +1,111 @@
+.left-panel {
+  width: 50%;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.right-panel {
+  width: 50%;
+  background: linear-gradient(135deg, #004D40, #00251A);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.logo {
+  width: 50px;
+  height: 50px;
+  background-color: #00f3ca;;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logo img {
+  width: 30px;
+  height: 30px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #A0A0A0;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.forgot {
+  float: right;
+  font-size: 12px;
+  color: #A0A0A0;
+  text-decoration: none;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #004D40;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-link {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #A0A0A0;
+}
+
+.login-link a {
+  color: #004D40;
+  text-decoration: none;
+}
+
+.card .balance {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.card .balance-label {
+  font-size: 14px;
+  color: #A0A0A0;
+  margin-bottom: 20px;
+}
+
+.card .card-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card .card-details .card-number {
+  font-size: 14px;
+  color: #A0A0A0;
+}
+
+.card .card-details .card-balance {
+  font-size: 16px;
+  font-weight: 600;
+}
