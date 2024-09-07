@@ -21,6 +21,7 @@ import {
 const BASE_URL = import.meta.env.VITE_APP_URI_API;
 
 const FileUploader = () => {
+    const [isLoading, setIsLoading] = useState(true);
     const [files, setFiles] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingFiles, setEditingFiles] = useState(null);
@@ -34,11 +35,13 @@ const FileUploader = () => {
             fetchFiles();
         }
     }, [userId]);
+
     // Function for generate a 6-digit code
     const generateSixDigitUniqueCode = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
     const fetchFiles = async () => {
+        setIsLoading(true);
         try {
             const response = await fetch(`${BASE_URL}/files/${userId}`);
             if (!response.ok) throw new Error('Failed to fetch files');
@@ -47,8 +50,11 @@ const FileUploader = () => {
         } catch (error) {
             message.error('Failed to fetch files');
             console.error('Fetch files error:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
+
     const handleDownload = async (file) => {
         const code = codeInputs[file._id];
         try {
@@ -241,7 +247,7 @@ const FileUploader = () => {
             key: 'actions',
             render: (record) => (
                 <Space>
-                    <Tooltip title="Edit File">
+                    <Tooltip title="Edit File" placement="bottom">
                         <Button
                             type="primary"
                             icon={<EditOutlined />}
@@ -257,7 +263,7 @@ const FileUploader = () => {
                         okText="Yes"
                         cancelText="No"
                     >
-                        <Tooltip title="Delete File">
+                        <Tooltip title="Delete File" placement="bottom">
                             <Button
                                 type="primary"
                                 danger
@@ -279,21 +285,45 @@ const FileUploader = () => {
                 file.type ===
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                 file.type === 'application/msword';
+
             if (!isSupported) {
                 message.error(`${file.name} is not a supported format.`);
                 return Upload.LIST_IGNORE;
             }
 
-            const isLt5M = file?.size / 1024 / 1024 < 5;
+            const isLt5M = file.size / 1024 / 1024 < 5;
             if (!isLt5M) {
-                message.error(`${file?.name} exceeds the 5MB size limit.`);
+                message.error(`${file.name} exceeds the 5MB size limit.`);
+                return Upload.LIST_IGNORE;
             }
 
-            return isSupported && isLt5M ? true : Upload.LIST_IGNORE;
+            return isSupported && isLt5M;
+        },
+        customRequest: (options) => {
+            const { file, onSuccess, onError } = options;
+
+            // Simulate a file upload request
+            setTimeout(() => {
+                if (file) {
+                    onSuccess('File uploaded successfully.');
+                } else {
+                    onError('File upload failed.');
+                }
+            }, 1000);
+        },
+        onChange: (info) => {
+            if (info.file.status === 'done') {
+                message.success(
+                    `${info.file.name} file uploaded successfully.`
+                );
+            } else if (info.file.status === 'error') {
+                message.error(`${info.file.name} file upload failed.`);
+            }
         },
         maxCount: 1,
         listType: 'picture',
     };
+
     const handleModalOk = () => {
         form.validateFields()
             .then((values) => {
@@ -328,6 +358,7 @@ const FileUploader = () => {
                 columns={columns}
                 rowKey="_id"
                 style={{ marginTop: 20 }}
+                loading={isLoading}
             />
             <Modal
                 title={editingFiles ? 'Edit files' : 'Add files'}
