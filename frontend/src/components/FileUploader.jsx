@@ -16,6 +16,7 @@ import {
     DownloadOutlined,
     UploadOutlined,
 } from '@ant-design/icons';
+const BASE_URL = import.meta.env.VITE_APP_URI_API;
 
 const FileUploader = () => {
     const [files, setFiles] = useState([]);
@@ -26,23 +27,18 @@ const FileUploader = () => {
     const userData = localStorage.getItem('user');
     const parsedData = userData ? JSON.parse(userData) : null;
     const userId = parsedData ? parsedData._id : null;
-
     useEffect(() => {
         if (userId) {
             fetchFiles();
         }
     }, [userId]);
-
     // Function for generate a 6-digit code
     const generateSixDigitUniqueCode = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
-
     const fetchFiles = async () => {
         try {
-            const response = await fetch(
-                `http://localhost:8000/files/${userId}`
-            );
+            const response = await fetch(`${BASE_URL}/files/${userId}`);
             if (!response.ok) throw new Error('Failed to fetch files');
             const data = await response.json();
             setFiles(data);
@@ -51,55 +47,56 @@ const FileUploader = () => {
             console.error('Fetch files error:', error);
         }
     };
+        const handleDownload = async (file) => {
+            const code = codeInputs[file._id];
+            try {
+                const response = await fetch(
+                    `${BASE_URL}/files/download-image/${code}`,
+                    {
+                        method: 'GET',
+                    }
+                );
 
-    const handleDownload = async (file) => {
-        const code = codeInputs[file._id];
-        try {
-            const response = await fetch(
-                `http://localhost:8000/files/download-image/${code}`,
-                {
-                    method: 'GET',
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            );
+                const contentDisposition = response.headers.get(
+                    'Content-Disposition'
+                );
+                const contentType = response.headers.get('Content-Type');
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+                const extension = contentType
+                    ? contentType.split('/')[1]
+                    : 'jpg';
+                const filename = contentDisposition
+                    ? contentDisposition
+                          .split('filename=')[1]
+                          .replace(/"/g, '') +
+                      '.' +
+                      extension
+                    : 'downloaded-file.' + extension;
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                setCodeInputs((prev) => ({ ...prev, [file._id]: '' })); // Clear input after download
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading the file:', error);
             }
-            const contentDisposition = response.headers.get(
-                'Content-Disposition'
-            );
-            const contentType = response.headers.get('Content-Type');
-
-            const extension = contentType ? contentType.split('/')[1] : 'jpg';
-            const filename = contentDisposition
-                ? contentDisposition.split('filename=')[1].replace(/"/g, '') +
-                  '.' +
-                  extension
-                : 'downloaded-file.' + extension;
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            setCodeInputs((prev) => ({ ...prev, [file._id]: '' })); // Clear input after download
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Error downloading the file:', error);
-        }
-    };
-
-    const handleDelete = async (filesId) => {
+        };
+const handleDelete = async (filesId) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/files/${userId}/${filesId}`,
+                `${BASE_URL}/files/${userId}/${filesId}`,
                 {
                     method: 'DELETE',
                 }
             );
-
             if (!response.ok) throw new Error('Failed to delete files');
             const data = await response.json();
             message.success('Files deleted successfully');
@@ -109,7 +106,6 @@ const FileUploader = () => {
             console.error('Delete error:', error);
         }
     };
-
     const handleEdit = (file) => {
         setEditingFiles(file);
         setIsModalVisible(true);
@@ -117,11 +113,10 @@ const FileUploader = () => {
             title: file.title,
         });
     };
-
     const handleUpdate = async (values) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/files/${userId}/${editingFiles._id}`,
+                `${BASE_URL}/files/${userId}/${editingFiles._id}`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -130,7 +125,6 @@ const FileUploader = () => {
                     body: JSON.stringify(values),
                 }
             );
-
             if (!response.ok) throw new Error('Failed to update files');
             const data = await response.json();
             message.success('Files updated successfully');
@@ -145,7 +139,6 @@ const FileUploader = () => {
             console.error('Update error:', error);
         }
     };
-
     const handleUpload = async (values) => {
         const formData = new FormData();
         formData.append('title', values.title);
@@ -160,16 +153,11 @@ const FileUploader = () => {
             message.error('Please select at least one file');
             return;
         }
-
         try {
-            const response = await fetch(
-                `http://localhost:8000/files/${userId}`,
-                {
-                    method: 'POST',
-                    body: formData,
-                }
-            );
-
+            const response = await fetch(`${BASE_URL}/files/${userId}`, {
+                method: 'POST',
+                body: formData,
+            });
             if (!response.ok) throw new Error('Failed to upload files');
             const data = await response.json();
             message.success('Files uploaded successfully');
@@ -181,11 +169,9 @@ const FileUploader = () => {
             console.error('Upload error:', error);
         }
     };
-
     const handleCodeInputChange = (fileId, value) => {
         setCodeInputs((prev) => ({ ...prev, [fileId]: value }));
     };
-
     const columns = [
         {
             title: 'Title',
@@ -216,7 +202,7 @@ const FileUploader = () => {
                         }}
                     >
                         <img
-                            src={`http://localhost:8000/${file}`}
+                            src={`${BASE_URL}/${file}`}
                             alt="files"
                             style={{
                                 width: 100,
@@ -276,7 +262,6 @@ const FileUploader = () => {
             ),
         },
     ];
-
     const uploadProps = {
         beforeUpload: (file) => {
             const isSupported =
@@ -285,7 +270,6 @@ const FileUploader = () => {
                 file.type ===
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                 file.type === 'application/msword';
-
             if (!isSupported) {
                 message.error(`${file.name} is not a supported format.`);
                 return Upload.LIST_IGNORE;
@@ -293,36 +277,35 @@ const FileUploader = () => {
 
             const isLt5M = file?.size / 1024 / 1024 < 5;
             if (!isLt5M) {
-                message.error(`${file.name} is larger than 5MB.`);
-                return Upload.LIST_IGNORE;
+                message.error(`${file?.name} exceeds the 5MB size limit.`);
             }
 
-            return false;
+            return isSupported && isLt5M ? true : Upload.LIST_IGNORE;
         },
-        customRequest: (options) => {
-            const { file, onSuccess, onError } = options;
-
-            const formData = new FormData();
-            formData.append('file', file);
-            fetch(`http://localhost:8000/files/${userId}`, {
-                method: 'POST',
-                body: formData,
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    message.success(`File ${file.name} uploaded successfully.`);
-                    onSuccess();
-                })
-                .catch((error) => {
-                    message.error(`File ${file.name} upload failed.`);
-                    onError(error);
-                });
-        },
+        maxCount: 1,
+        listType: 'picture',
     };
-
+    const handleModalOk = () => {
+        form.validateFields()
+            .then((values) => {
+                if (editingFiles) {
+                    handleUpdate(values);
+                } else {
+                    handleUpload(values);
+                }
+            })
+            .catch((info) => {
+                console.log('Validate Failed:', info);
+            });
+    };
+    const handleModalCancel = () => {
+        setIsModalVisible(false);
+        setEditingFiles(null);
+        form.resetFields();
+    };
     return (
         <>
-            <div style={{textAlign:'center', padding:'10px'}}>
+            <div style={{ textAlign: 'center', padding: '10px' }}>
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
@@ -332,53 +315,57 @@ const FileUploader = () => {
                 </Button>
             </div>
             <Table
-                columns={columns}
                 dataSource={files}
-                rowKey={(record) => record._id}
-                pagination={false}
+                columns={columns}
+                rowKey="_id"
+                style={{ marginTop: 20 }}
             />
             <Modal
-                title="Upload Files"
+                title={editingFiles ? 'Edit files' : 'Add files'}
                 visible={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
-                footer={null}
+                onOk={handleModalOk}
+                onCancel={handleModalCancel}
+                okText={editingFiles ? 'Update' : 'Create'}
+                cancelText="Cancel"
             >
-                <Form form={form} onFinish={handleUpload} layout="vertical">
+                <Form form={form} layout="vertical">
                     <Form.Item
                         name="title"
-                        label="Title"
+                        label="files Title"
                         rules={[
-                            { required: true, message: 'Please enter a title' },
+                            {
+                                required: true,
+                                message: 'Please input the files title!',
+                            },
                         ]}
                     >
-                        <Input />
+                        <Input placeholder="Enter files title" />
                     </Form.Item>
-                    <Form.Item
-                        name="files"
-                        label="Files"
-                        getValueFromEvent={({ fileList }) => fileList}
-                    >
-                        <Upload.Dragger {...uploadProps} multiple>
-                            <p className="ant-upload-drag-icon">
-                                <UploadOutlined />
-                            </p>
-                            <p className="ant-upload-text">
-                                Click or drag file to this area to upload
-                            </p>
-                            <p className="ant-upload-hint">
-                                Support for a single or bulk upload.
-                            </p>
-                        </Upload.Dragger>
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit">
-                            Upload
-                        </Button>
-                    </Form.Item>
+                    {/* Only show upload if adding a new files */}
+                    {!editingFiles && (
+                        <Form.Item
+                            name="files"
+                            label="Upload File"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: 'Please upload a file!',
+                                },
+                            ]}
+                        >
+                            <Upload {...uploadProps}>
+                                <Button
+                                    type="primary"
+                                    icon={<UploadOutlined />}
+                                >
+                                    Select File
+                                </Button>
+                            </Upload>
+                        </Form.Item>
+                    )}
                 </Form>
             </Modal>
         </>
     );
 };
-
 export default FileUploader;
