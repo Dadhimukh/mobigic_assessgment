@@ -322,13 +322,15 @@ const FileUploader = () => {
 
     return (
         <>
-            <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setIsModalVisible(true)}
-            >
-                Add File
-            </Button>
+            <div style={{textAlign:'center', padding:'10px'}}>
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsModalVisible(true)}
+                >
+                    Add File
+                </Button>
+            </div>
             <Table
                 columns={columns}
                 dataSource={files}
