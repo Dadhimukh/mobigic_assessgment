@@ -1,31 +1,31 @@
 const path = require('path');
 const multer = require('multer');
-const { generateUniqueCode } = require('../utils/fileUtils');
+const FILE_PATH = path.join('/uploads/files');
 
-// Define the storage strategy
+// Multer configuration for uploading files to the server's uploads folder.
 const storage = multer.diskStorage({
-    destination: function (req, file, callback) {
-        callback(null, path.join(__dirname, '../uploads')); // Save to the uploads folder
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, '..', FILE_PATH));
     },
-    filename: function (req, file, callback) {
-        const uniqueCode = generateUniqueCode(); // Generate unique code for the file
-        const ext = path.extname(file.originalname); // Get the file extension
-        callback(null, `${uniqueCode}${ext}`); // Save file with unique code and extension
+    filename: function (req, file, cb) {
+        cb(
+            null,
+            file.fieldname + '-' + Date.now() + path.extname(file.originalname)
+        );
     },
 });
 
-// Allow any file type
+// Multer configuration for validating file type and size.
 const fileFilter = (req, file, callback) => {
-    // No filtering, accept any file type
     callback(null, true);
 };
 
-// Create the multer upload instance with specified settings
+// Multer instance for uploading files.
 const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 1024 * 1024 * 10, // Set size limit to 10 MB (optional, adjust if needed)
+        fileSize: 1024 * 1024 * 10,
     },
 });
 

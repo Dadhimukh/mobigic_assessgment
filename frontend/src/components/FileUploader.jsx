@@ -15,14 +15,13 @@ import {
     EditOutlined,
     DeleteOutlined,
     DownloadOutlined,
+    UploadOutlined,
 } from '@ant-design/icons';
 
-const { Text } = Typography;
-
-const AlbumManager = () => {
-    const [albums, setAlbums] = useState([]);
+const FileUploader = () => {
+    const [files, setFiles] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [editingAlbum, setEditingAlbum] = useState(null);
+    const [editingFiles, setEditingFiles] = useState(null);
     const [form] = Form.useForm();
     const [codeInputs, setCodeInputs] = useState({});
 
@@ -32,93 +31,64 @@ const AlbumManager = () => {
 
     useEffect(() => {
         if (userId) {
-            fetchAlbums();
+            fetchFiles();
         }
     }, [userId]);
 
-    const fetchAlbums = async () => {
+    // Function for generate a 6-digit code
+    const generateSixDigitUniqueCode = () => {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    };
+
+    const fetchFiles = async () => {
         try {
             const response = await fetch(
-                `http://localhost:8000/albums/${userId}`
+                `http://localhost:8000/files/${userId}`
             );
-            if (!response.ok) throw new Error('Failed to fetch albums');
+            if (!response.ok) throw new Error('Failed to fetch files');
             const data = await response.json();
-            setAlbums(data);
+            setFiles(data);
         } catch (error) {
-            message.error('Failed to fetch albums');
-            console.error(error);
+            message.error('Failed to fetch files');
+            console.error('Fetch files error:', error);
         }
     };
 
-    const handleDownload = async (albumId, img, imgIndex) => {
-        const code = codeInputs[`${albumId}-${imgIndex}`];
-        if (!code) {
-            message.error('Please enter the 6-digit code');
-            return;
-        }
-
-        try {
-            const response = await fetch(
-                `http://localhost:8000/albums/download/${userId}/${albumId}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code }),
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Incorrect code');
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = img.url;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            message.success('File downloaded successfully');
-        } catch (error) {
-            message.error(error.message);
-            console.error(error);
-        }
+    const handleDownload = async () => {
+        console.log('download is clicked');
     };
 
-    const handleDelete = async (albumId) => {
+    const handleDelete = async (filesId) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/albums/${userId}/${albumId}`,
+                `http://localhost:8000/files/${userId}/${filesId}`,
                 {
                     method: 'DELETE',
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to delete album');
+            if (!response.ok) throw new Error('Failed to delete files');
             const data = await response.json();
-            message.success('Album deleted successfully');
-            setAlbums(albums.filter((album) => album._id !== albumId));
+            message.success('files deleted successfully');
+            setFiles(files.filter((files) => files._id !== filesId));
         } catch (error) {
-            message.error('Failed to delete album');
-            console.error(error);
+            message.error(`Delete failed: ${error.message}`);
+            console.error('Delete error:', error);
         }
     };
 
-    const handleEdit = (album) => {
-        setEditingAlbum(album);
+    const handleEdit = (files) => {
+        setEditingFiles(files);
         setIsModalVisible(true);
         form.setFieldsValue({
-            title: album.title,
+            title: files.title,
         });
     };
 
     const handleUpdate = async (values) => {
         try {
             const response = await fetch(
-                `http://localhost:8000/albums/${userId}/${editingAlbum._id}`,
+                `http://localhost:8000/files/${userId}/${editingFiles._id}`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -128,56 +98,61 @@ const AlbumManager = () => {
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to update album');
+            if (!response.ok) throw new Error('Failed to update files');
             const data = await response.json();
-            message.success('Album updated successfully');
-            setAlbums(
-                albums.map((album) => (album._id === data._id ? data : album))
+            message.success('files updated successfully');
+            setFiles(
+                files.map((files) => (files._id === data._id ? data : files))
             );
             setIsModalVisible(false);
-            setEditingAlbum(null);
+            setEditingFiles(null);
             form.resetFields();
         } catch (error) {
-            message.error('Failed to update album');
-            console.error(error);
+            message.error(`Update failed: ${error.message}`);
+            console.error('Update error:', error);
         }
     };
 
     const handleUpload = async (values) => {
         const formData = new FormData();
         formData.append('title', values.title);
+        const generatedCode = generateSixDigitUniqueCode();
+        formData.append('code', generatedCode);
+
         if (values.files && values.files.fileList.length > 0) {
-            formData.append('file', values.files.fileList[0].originFileObj); // Only one file
+            values.files.fileList.forEach((file) => {
+                formData.append('files', file.originFileObj);
+            });
         } else {
-            message.error('Please select a file');
+            message.error('Please select at least one file');
             return;
         }
 
         try {
             const response = await fetch(
-                `http://localhost:8000/albums/${userId}`,
+                `http://localhost:8000/files/${userId}`,
                 {
                     method: 'POST',
                     body: formData,
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to upload album');
+            if (!response.ok) throw new Error('Failed to upload files');
             const data = await response.json();
-            message.success('Album uploaded successfully');
-            setAlbums([...albums, data]);
+            message.success('files uploaded successfully');
+            setFiles([...files, { ...data, code: generatedCode }]);
             setIsModalVisible(false);
             form.resetFields();
         } catch (error) {
-            message.error(error.message);
-            console.error(error);
+            message.error(`Upload failed: ${error.message}`);
+            console.error('Upload error:', error);
         }
     };
 
-    const handleCodeInputChange = (albumId, imgIndex, value) => {
+    const handleCodeInputChange = (filesId, fileUrl, value) => {
         setCodeInputs((prev) => ({
             ...prev,
-            [`${albumId}-${imgIndex}`]: value,
+            [`${filesId}-${fileUrl}`]: value,
         }));
     };
 
@@ -203,8 +178,8 @@ const AlbumManager = () => {
                         }}
                     >
                         <img
-                            src={`http://localhost:8000/uploads/${file.url}`}
-                            alt="album"
+                            src={`http://localhost:8000/${file}`}
+                            alt="files"
                             style={{
                                 width: 100,
                                 height: 100,
@@ -218,24 +193,23 @@ const AlbumManager = () => {
                             <Input
                                 placeholder="Enter 6-digit code"
                                 value={
-                                    codeInputs[`${record._id}-${index}`] || ''
+                                    codeInputs[`${record._id}-${file}`] || ''
                                 }
                                 onChange={(e) =>
                                     handleCodeInputChange(
                                         record._id,
-                                        index,
+                                        file,
                                         e.target.value
                                     )
                                 }
                                 maxLength={6}
                                 style={{ width: 200 }}
+                                type="number"
                             />
                             <Button
                                 type="primary"
                                 icon={<DownloadOutlined />}
-                                onClick={() =>
-                                    handleDownload(record._id, file, index)
-                                }
+                                onClick={() => handleDownload(record._id, file)}
                             >
                                 Download
                             </Button>
@@ -249,14 +223,15 @@ const AlbumManager = () => {
             render: (record) => (
                 <Space>
                     <Button
-                        type="default"
+                        type="primary"
                         icon={<EditOutlined />}
                         onClick={() => handleEdit(record)}
                     >
                         Edit
                     </Button>
                     <Button
-                        type="danger"
+                        type="primary"
+                        danger
                         icon={<DeleteOutlined />}
                         onClick={() => handleDelete(record._id)}
                     >
@@ -288,74 +263,85 @@ const AlbumManager = () => {
 
             return isSupported && isLt5M ? true : Upload.LIST_IGNORE;
         },
-        maxCount: 1, // Restrict to one file at a time
+        maxCount: 1,
         listType: 'picture',
     };
 
     const handleModalOk = () => {
-        form.submit();
+        form.validateFields()
+            .then((values) => {
+                if (editingFiles) {
+                    handleUpdate(values);
+                } else {
+                    handleUpload(values);
+                }
+            })
+            .catch((info) => {
+                console.log('Validate Failed:', info);
+            });
     };
 
     const handleModalCancel = () => {
         setIsModalVisible(false);
-        setEditingAlbum(null);
+        setEditingFiles(null);
         form.resetFields();
     };
 
     return (
-        <div style={{ padding: 20 }}>
-            <Typography.Title level={2}>Album Manager</Typography.Title>
+        <>
             <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => setIsModalVisible(true)}
-                style={{ marginBottom: 20 }}
             >
-                Upload Album
+                Add files
             </Button>
             <Table
-                dataSource={albums}
+                dataSource={files}
                 columns={columns}
                 rowKey="_id"
-                pagination={{ pageSize: 5 }}
+                style={{ marginTop: 20 }}
             />
+
             <Modal
-                title={editingAlbum ? 'Edit Album' : 'Upload Album'}
+                title={editingFiles ? 'Edit files' : 'Add files'}
                 visible={isModalVisible}
                 onOk={handleModalOk}
                 onCancel={handleModalCancel}
-                okText={editingAlbum ? 'Update' : 'Upload'}
+                okText={editingFiles ? 'Update' : 'Create'}
+                cancelText="Cancel"
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={editingAlbum ? handleUpdate : handleUpload}
-                >
+                <Form form={form} layout="vertical">
                     <Form.Item
                         name="title"
-                        label="Album Title"
+                        label="files Title"
                         rules={[
                             {
                                 required: true,
-                                message: 'Please enter the album title',
+                                message: 'Please input the files title!',
                             },
                         ]}
                     >
-                        <Input />
+                        <Input placeholder="Enter files title" />
                     </Form.Item>
-                    {!editingAlbum && (
+
+                    {/* Only show upload if adding a new files */}
+                    {!editingFiles && (
                         <Form.Item
                             name="files"
-                            label="Upload Files"
+                            label="Upload File"
                             rules={[
                                 {
                                     required: true,
-                                    message: 'Please upload a file',
+                                    message: 'Please upload a file!',
                                 },
                             ]}
                         >
                             <Upload {...uploadProps}>
-                                <Button icon={<PlusOutlined />}>
+                                <Button
+                                    type="primary"
+                                    icon={<UploadOutlined />}
+                                >
                                     Select File
                                 </Button>
                             </Upload>
@@ -363,8 +349,8 @@ const AlbumManager = () => {
                     )}
                 </Form>
             </Modal>
-        </div>
+        </>
     );
 };
 
-export default AlbumManager;
+export default FileUploader;

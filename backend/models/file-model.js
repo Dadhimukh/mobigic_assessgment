@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const albumSchema = mongoose.Schema(
+const fileSchema = mongoose.Schema(
     {
         user_id: {
             type: mongoose.Schema.Types.ObjectId,
@@ -9,6 +9,7 @@ const albumSchema = mongoose.Schema(
         },
 
         title: { type: String, required: true },
+        code: { type: String, required: true },
         img: [{ type: String, required: true }],
     },
     {
@@ -17,4 +18,4 @@ const albumSchema = mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model('album', albumSchema);
+module.exports = mongoose.model('file', fileSchema);

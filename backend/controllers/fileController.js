@@ -1,68 +1,91 @@
-// backend/controllers/fileController.js
-
 const express = require('express');
-const Album = require('../models/file-model');
-const upload = require('../middleware/upload'); // Import upload correctly
-
+const path = require('path');
+const fs = require('fs');
+const Files = require('../models/file-model');
+const upload = require('../middleware/upload');
 const router = express.Router();
 
-// POST: Upload album
+// Function To Uploads the file
 router.post('/:userid', upload.any(), async (req, res) => {
     try {
-        const filePaths = req.files.map((file) => file.path);
-
-        const albumphoto = await Album.create({
+        const filePaths = req.files.map((file) => {
+            return path.relative(path.join(__dirname, '..'), file.path);
+        });
+        const filesphoto = await Files.create({
             user_id: req.params.userid,
             title: req.body.title,
             img: filePaths,
+            code: req.body.code,
         });
-
-        console.log(albumphoto);
-        return res.status(201).send(albumphoto);
+        return res.status(201).send(filesphoto);
     } catch (e) {
         return res.status(500).json({ status: 'failed', message: e.message });
     }
 });
 
-// GET: Fetch albums
+// Function To fetch the file
 router.get('/:userid', async (req, res) => {
     try {
-        const albums = await Album.find({ user_id: req.params.userid })
+        const filess = await Files.find({ user_id: req.params.userid })
             .lean()
             .exec();
-        console.log(albums);
-        return res.status(200).send(albums);
+        return res.status(200).send(filess);
     } catch (e) {
         return res.status(500).json({ status: 'failed', message: e.message });
     }
 });
 
-// DELETE: Delete an album
-router.delete('/:userid/:albumid', async (req, res) => {
+// Function To Delete the file
+router.delete('/:userid/:fileid', async (req, res) => {
     try {
-        const album = await Album.findByIdAndDelete(req.params.albumid)
+        const files = await Files.findByIdAndDelete(req.params.fileid)
             .lean()
             .exec();
-        console.log(album);
-        return res.status(200).send(album);
+        console.log(files);
+        return res.status(200).send(files);
     } catch (e) {
         return res.status(500).json({ status: 'failed', message: e.message });
     }
 });
 
-// PATCH: Update an album
-router.patch('/:userid/:albumid', async (req, res) => {
+// Function To Edit the file
+router.patch('/:userid/:fileid', async (req, res) => {
     try {
-        const album = await Album.findByIdAndUpdate(
-            req.params.albumid,
-            req.body,
+        const files = await Files.findByIdAndUpdate(
+            req.params.fileid,
+            { title: req.body.title }, // Updating the title only
             { new: true }
         )
             .lean()
             .exec();
-        res.status(200).send(album);
+        res.status(200).send(files);
     } catch (e) {
         res.status(500).json({ message: e.message, status: 'Failed' });
+    }
+});
+
+// Function To Download the file
+router.get('/download-image/:code', async (req, res) => {
+    try {
+        const files = await Files.findOne({ code: req.params.code });
+        if (!files) {
+            return res.status(404).json({ message: 'Files not found' });
+        }
+        const imagePath = files.img[0]; // Update it For multiple images
+        const absolutePath = path.resolve(imagePath);
+
+        if (fs.existsSync(absolutePath)) {
+            res.download(absolutePath, (err) => {
+                if (err) {
+                    console.error('Error while downloading the file:', err);
+                    return res.status(500).send('Error downloading the file');
+                }
+            });
+        } else {
+            return res.status(404).json({ message: 'File not found' });
+        }
+    } catch (e) {
+        return res.status(500).json({ status: 'failed', message: e.message });
     }
 });
 
